@@ -1,0 +1,15 @@
+﻿{
+  "name": "pulsegate",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-style API Gateway and Traffic Manager",
+  "workspaces": [
+    "gateway",
+    "services/*",
+    "dashboard"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm test --workspaces"
+  }
+}
