@@ -1,15 +1,42 @@
-﻿node_modules/
+# Dependencies
+node_modules/
+
+# Build outputs
 dist/
-coverage/
+build/
+
+# Environment files (NEVER commit real .env)
 .env
-.env.*
-!.env.example
+.env.local
+.env.*.local
 
+# Logs
 *.log
+logs/
+npm-debug.log*
 
+# Coverage
+coverage/
+.nyc_output/
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
 .DS_Store
 Thumbs.db
 
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+# TypeScript cache
+*.tsbuildinfo
+
+# Jest cache
+.jest-cache/
+
+# Docker
+.dockerignore
+
+# Test artifacts
+test-results/

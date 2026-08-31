@@ -1,0 +1,227 @@
+services:
+  # ─── Infrastructure ───────────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - pulsegate
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: pulsegate
+      POSTGRES_PASSWORD: pulsegate
+      POSTGRES_DB: pulsegate
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pulsegate"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pulsegate
+
+  # ─── User Service (3 instances) ───────────────────────────────────────
+
+  user-service-1:
+    build:
+      context: ../../services/user-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: "4001"
+      INSTANCE_ID: user-service-1
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4001/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    ports:
+      - "4001:4001"
+    networks:
+      - pulsegate
+
+  user-service-2:
+    build:
+      context: ../../services/user-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: "4002"
+      INSTANCE_ID: user-service-2
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4002/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - pulsegate
+
+  user-service-3:
+    build:
+      context: ../../services/user-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: "4003"
+      INSTANCE_ID: user-service-3
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4003/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - pulsegate
+
+  # ─── Order Service (2 instances) ──────────────────────────────────────
+
+  order-service-1:
+    build:
+      context: ../../services/order-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: "4011"
+      INSTANCE_ID: order-service-1
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4011/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    ports:
+      - "4011:4011"
+    networks:
+      - pulsegate
+
+  order-service-2:
+    build:
+      context: ../../services/order-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: "4012"
+      INSTANCE_ID: order-service-2
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4012/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - pulsegate
+
+  # ─── Product Service (2 instances) ────────────────────────────────────
+
+  product-service-1:
+    build:
+      context: ../../services/product-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: "4021"
+      INSTANCE_ID: product-service-1
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4021/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    ports:
+      - "4021:4021"
+    networks:
+      - pulsegate
+
+  product-service-2:
+    build:
+      context: ../../services/product-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: "4022"
+      INSTANCE_ID: product-service-2
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4022/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - pulsegate
+
+  # ─── API Gateway ──────────────────────────────────────────────────────
+
+  gateway:
+    build:
+      context: ../../gateway
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      GATEWAY_PORT: "3000"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: pulsegate
+      POSTGRES_USER: pulsegate
+      POSTGRES_PASSWORD: pulsegate
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      JWT_SECRET: "pulsegate-dev-secret-change-in-production-must-be-long"
+      HEALTH_CHECK_INTERVAL: "5000"
+      BACKEND_TIMEOUT: "10000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      user-service-1:
+        condition: service_started
+      order-service-1:
+        condition: service_started
+      product-service-1:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - pulsegate
+
+  # ─── Dashboard ────────────────────────────────────────────────────────
+
+  dashboard:
+    build:
+      context: ../../dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      gateway:
+        condition: service_started
+    networks:
+      - pulsegate
+
+volumes:
+  postgres_data:
+
+networks:
+  pulsegate:
+    driver: bridge

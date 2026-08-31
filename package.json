@@ -1,15 +1,28 @@
-﻿{
+{
   "name": "pulsegate",
   "version": "1.0.0",
   "private": true,
-  "description": "Production-style API Gateway and Traffic Manager",
+  "description": "Production-Style API Gateway & Traffic Manager",
   "workspaces": [
     "gateway",
     "services/*",
     "dashboard"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
-    "test": "npm test --workspaces"
+    "build": "npm run build:services && npm run build:gateway",
+    "build:services": "npm run build --workspace=@pulsegate/user-service && npm run build --workspace=@pulsegate/order-service && npm run build --workspace=@pulsegate/product-service",
+    "build:gateway": "npm run build --workspace=@pulsegate/gateway",
+    "build:dashboard": "npm run build --workspace=@pulsegate/dashboard",
+    "test": "npm run test:services && npm run test:gateway",
+    "test:services": "npm run test --workspace=@pulsegate/user-service && npm run test --workspace=@pulsegate/order-service && npm run test --workspace=@pulsegate/product-service",
+    "test:gateway": "npm run test --workspace=@pulsegate/gateway",
+    "docker:up": "docker compose -f infra/docker/docker-compose.yml up --build -d",
+    "docker:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "docker:logs": "docker compose -f infra/docker/docker-compose.yml logs -f",
+    "docker:ps": "docker compose -f infra/docker/docker-compose.yml ps"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
   }
 }

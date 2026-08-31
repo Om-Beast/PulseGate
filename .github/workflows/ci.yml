@@ -1,25 +1,127 @@
-name: CI
+name: PulseGate CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, develop]
   pull_request:
+    branches: [main]
 
 jobs:
-  quality:
+  build-and-test:
+    name: Build & Test
     runs-on: ubuntu-latest
 
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      postgres:
+        image: postgres:16-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: pulsegate
+          POSTGRES_PASSWORD: pulsegate
+          POSTGRES_DB: pulsegate
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ci-test-secret-at-least-32-characters-long
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: pulsegate
+      POSTGRES_USER: pulsegate
+      POSTGRES_PASSWORD: pulsegate
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      GATEWAY_PORT: 3000
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Verify Node.js
-        run: |
-          node --version
-          npm --version
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build backend services
+        run: npm run build:services
+
+      - name: Build gateway
+        run: npm run build:gateway
+
+      - name: Build dashboard
+        run: npm run build:dashboard
+
+      - name: Run service tests
+        run: npm run test:services
+
+      - name: Run gateway tests
+        run: npm run test:gateway
+
+      - name: Validate Docker Compose
+        run: docker compose -f infra/docker/docker-compose.yml config --quiet
+
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build gateway image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./gateway
+          push: false
+          tags: pulsegate/gateway:ci
+
+      - name: Build user-service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/user-service
+          push: false
+          tags: pulsegate/user-service:ci
+
+      - name: Build order-service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/order-service
+          push: false
+          tags: pulsegate/order-service:ci
+
+      - name: Build product-service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/product-service
+          push: false
+          tags: pulsegate/product-service:ci
+
+      - name: Build dashboard image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./dashboard
+          push: false
+          tags: pulsegate/dashboard:ci
