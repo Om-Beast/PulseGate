@@ -2,6 +2,7 @@
 import cors from 'cors';
 import helmet from 'helmet';
 import * as http from 'http';
+import * as https from 'https';
 
 import { correlationId } from './middleware/correlationId';
 import { requestLogger } from './middleware/requestLogger';
@@ -242,7 +243,8 @@ async function proxyRequest(
       timeout: config.gateway.timeout,
     };
 
-    const proxyReq = http.request(options, (proxyRes) => {
+    const client = instance.protocol === 'https' ? https : http;
+    const proxyReq = client.request(options, (proxyRes) => {
       // Set response headers (excluding hop-by-hop)
       for (const [key, value] of Object.entries(proxyRes.headers)) {
         if (value !== undefined && key.toLowerCase() !== 'transfer-encoding') {
@@ -320,4 +322,6 @@ async function proxyRequest(
 }
 
 export default app;
+
+
 

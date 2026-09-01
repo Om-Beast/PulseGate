@@ -19,6 +19,7 @@ export interface ServiceInstance {
   service: string;
   host: string;
   port: number;
+  protocol?: 'http' | 'https';
   healthy: boolean;
   lastChecked: Date;
   failureCount: number;
@@ -97,4 +98,5 @@ declare global {
 }
 
 export {};
+
 
