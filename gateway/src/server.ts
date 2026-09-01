@@ -1,4 +1,4 @@
-import app from './app';
+﻿import app from './app';
 import { metrics } from './metrics/metricsCollector';
 import { config } from './config/settings';
 import { healthChecker } from './health/healthChecker';
@@ -6,7 +6,7 @@ import { connectRedis } from './rateLimiter/redisRateLimiter';
 import { initDb, closeDb } from './auth/authService';
 import { logger } from './logging/logger';
 
-const PORT = config.port;
+const PORT = Number(process.env.PORT) || config.port;
 
 async function start(): Promise<void> {
   logger.info('PulseGate starting', {
@@ -36,11 +36,11 @@ async function start(): Promise<void> {
   if (tsInterval.unref) tsInterval.unref();
 
   // Start HTTP server
-  const server = app.listen(PORT, () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     logger.info('PulseGate gateway listening', { port: PORT });
   });
 
-  // ─── Graceful Shutdown ─────────────────────────────────────────────────────
+  // â”€â”€â”€ Graceful Shutdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function shutdown(signal: string): Promise<void> {
     logger.info('Shutdown signal received', { signal });
@@ -75,3 +75,4 @@ start().catch((err) => {
   logger.error('Fatal startup error', { message: err instanceof Error ? err.message : String(err) });
   process.exit(1);
 });
+

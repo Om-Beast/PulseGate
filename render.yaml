@@ -1,0 +1,165 @@
+﻿services:
+  - type: web
+    name: pulsegate-gateway
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./gateway/Dockerfile
+    dockerContext: ./gateway
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GATEWAY_PORT
+        value: "10000"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: pulsegate-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: pulsegate-db
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: pulsegate-db
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: pulsegate-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: pulsegate-db
+          property: password
+      - key: REDIS_HOST
+        fromService:
+          name: pulsegate-redis
+          type: keyvalue
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: pulsegate-redis
+          type: keyvalue
+          property: port
+
+  - type: pserv
+    name: user-service-1
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./services/user-service/Dockerfile
+    dockerContext: ./services/user-service
+    envVars:
+      - key: PORT
+        value: "4001"
+      - key: INSTANCE_ID
+        value: user-service-1
+      - key: NODE_ENV
+        value: production
+
+  - type: pserv
+    name: user-service-2
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./services/user-service/Dockerfile
+    dockerContext: ./services/user-service
+    envVars:
+      - key: PORT
+        value: "4002"
+      - key: INSTANCE_ID
+        value: user-service-2
+      - key: NODE_ENV
+        value: production
+
+  - type: pserv
+    name: user-service-3
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./services/user-service/Dockerfile
+    dockerContext: ./services/user-service
+    envVars:
+      - key: PORT
+        value: "4003"
+      - key: INSTANCE_ID
+        value: user-service-3
+      - key: NODE_ENV
+        value: production
+
+  - type: pserv
+    name: order-service-1
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./services/order-service/Dockerfile
+    dockerContext: ./services/order-service
+    envVars:
+      - key: PORT
+        value: "4011"
+      - key: INSTANCE_ID
+        value: order-service-1
+      - key: NODE_ENV
+        value: production
+
+  - type: pserv
+    name: order-service-2
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./services/order-service/Dockerfile
+    dockerContext: ./services/order-service
+    envVars:
+      - key: PORT
+        value: "4012"
+      - key: INSTANCE_ID
+        value: order-service-2
+      - key: NODE_ENV
+        value: production
+
+  - type: pserv
+    name: product-service-1
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./services/product-service/Dockerfile
+    dockerContext: ./services/product-service
+    envVars:
+      - key: PORT
+        value: "4021"
+      - key: INSTANCE_ID
+        value: product-service-1
+      - key: NODE_ENV
+        value: production
+
+  - type: pserv
+    name: product-service-2
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./services/product-service/Dockerfile
+    dockerContext: ./services/product-service
+    envVars:
+      - key: PORT
+        value: "4022"
+      - key: INSTANCE_ID
+        value: product-service-2
+      - key: NODE_ENV
+        value: production
+
+  - type: keyvalue
+    name: pulsegate-redis
+    plan: starter
+    region: singapore
+    ipAllowList: []
+
+databases:
+  - name: pulsegate-db
+    plan: starter
+    region: singapore
+    postgresMajorVersion: "16"
+    databaseName: pulsegate
+    user: pulsegate
