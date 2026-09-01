@@ -1,42 +1,92 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+} from 'recharts';
+import type { TimeSeriesPoint } from '../types';
+import { EmptyState } from './EmptyState';
 
-interface TrafficChartProps {
-  data: any[];
+interface Props {
+  timeSeries: TimeSeriesPoint[];
+  height?: number;
 }
 
-export function TrafficChart({ data }: TrafficChartProps) {
+function fmtTime(ts: number) {
+  return new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
   return (
-    <div className="h-64 w-full text-xs">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1a2840" vertical={false} />
-          <XAxis 
-            dataKey="time" 
-            stroke="#94a3b8" 
-            tick={{ fill: '#94a3b8' }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis 
-            stroke="#94a3b8" 
-            tick={{ fill: '#94a3b8' }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <Tooltip 
-            contentStyle={{ backgroundColor: '#0f1623', borderColor: '#1a2840', color: '#f1f5f9' }}
-            itemStyle={{ color: '#0ea5e9' }}
-          />
-          <Line 
-            type="monotone" 
-            dataKey="requests" 
-            stroke="#0ea5e9" 
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, fill: '#0ea5e9' }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+    <div className="bg-[#16161e] border border-[#22222e] rounded-lg p-2.5 shadow-xl">
+      <p className="text-[10px] text-[#55556a] font-mono mb-1.5">{fmtTime(label as number)}</p>
+      {(payload as Array<{ name: string; value: number; color: string }>).map((p) => (
+        <div key={p.name} className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: p.color }} />
+          <span className="text-[10px] text-[#8888a0] capitalize">{p.name}:</span>
+          <span className="text-[10px] font-mono text-[#f0f0f4] font-medium">{p.value}</span>
+        </div>
+      ))}
     </div>
+  );
+}
+
+export function TrafficChart({ timeSeries, height = 140 }: Props) {
+  if (timeSeries.length === 0) {
+    return (
+      <div style={{ height }}>
+        <EmptyState title="No traffic data" message="Data appears every 5 seconds" />
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <AreaChart data={timeSeries} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+        <defs>
+          <linearGradient id="trafficGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
+            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="errorGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#1a1a24" vertical={false} />
+        <XAxis
+          dataKey="timestamp"
+          tickFormatter={fmtTime}
+          tick={{ fontSize: 9, fill: '#55556a', fontFamily: 'monospace' }}
+          axisLine={false}
+          tickLine={false}
+          interval="preserveStartEnd"
+        />
+        <YAxis
+          tick={{ fontSize: 9, fill: '#55556a', fontFamily: 'monospace' }}
+          axisLine={false}
+          tickLine={false}
+          allowDecimals={false}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Area
+          type="monotone"
+          dataKey="requests"
+          stroke="#6366f1"
+          strokeWidth={1.5}
+          fill="url(#trafficGrad)"
+          dot={false}
+          activeDot={{ r: 3, fill: '#6366f1' }}
+        />
+        <Area
+          type="monotone"
+          dataKey="errors"
+          stroke="#ef4444"
+          strokeWidth={1}
+          fill="url(#errorGrad)"
+          dot={false}
+          activeDot={{ r: 3, fill: '#ef4444' }}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }

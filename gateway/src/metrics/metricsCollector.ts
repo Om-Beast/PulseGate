@@ -1,6 +1,15 @@
 import { GatewayMetrics, RecentRequest } from '../types';
 import { config } from '../config/settings';
 
+export interface TimeSeriesPoint {
+  timestamp: number;
+  requests: number;
+  p50: number;
+  p95: number;
+  p99: number;
+  errors: number;
+}
+
 /**
  * MetricsCollector gathers real-time gateway metrics.
  *
@@ -9,6 +18,7 @@ import { config } from '../config/settings';
  * - Latencies array is bounded to prevent unbounded memory growth
  * - RecentRequests uses a fixed-size ring-buffer style (splice when full)
  * - Percentile calculation is done on-demand (p50, p95, p99)
+ * - timeSeries stores up to 60 snapshots (5-minute rolling window at 5s intervals)
  */
 export class MetricsCollector {
   private totalRequests = 0;
@@ -28,6 +38,12 @@ export class MetricsCollector {
   // Ring-buffer for recent requests
   private recentRequests: RecentRequest[] = [];
   private readonly MAX_RECENT_REQUESTS: number;
+
+  // Rolling 5-minute time-series (one point per 5s = 60 points max)
+  private timeSeries: TimeSeriesPoint[] = [];
+  private readonly MAX_TIME_SERIES = 60;
+  private lastSnapshotTotal = 0;
+  private lastSnapshotErrors = 0;
 
   constructor() {
     this.MAX_RECENT_REQUESTS = config.gateway.maxRecentRequests;
@@ -95,6 +111,41 @@ export class MetricsCollector {
     this.backendFailures[instanceId] = (this.backendFailures[instanceId] ?? 0) + 1;
   }
 
+  /**
+   * Called every 5 seconds to snapshot a time-series data point.
+   * Invoked from server.ts setInterval.
+   */
+  snapshotTimeSeries(): void {
+    const totalErrors = this.clientErrors + this.serverErrors;
+    const intervalRequests = this.totalRequests - this.lastSnapshotTotal;
+    const intervalErrors = totalErrors - this.lastSnapshotErrors;
+
+    // Compute percentiles from last 500 latency samples (recent window)
+    const recentLats = this.latencies.slice(-500);
+    const sorted = [...recentLats].sort((a, b) => a - b);
+
+    const point: TimeSeriesPoint = {
+      timestamp: Date.now(),
+      requests: Math.max(0, intervalRequests),
+      p50: this.calcPercentile(sorted, 50),
+      p95: this.calcPercentile(sorted, 95),
+      p99: this.calcPercentile(sorted, 99),
+      errors: Math.max(0, intervalErrors),
+    };
+
+    this.timeSeries.push(point);
+    if (this.timeSeries.length > this.MAX_TIME_SERIES) {
+      this.timeSeries.splice(0, this.timeSeries.length - this.MAX_TIME_SERIES);
+    }
+
+    this.lastSnapshotTotal = this.totalRequests;
+    this.lastSnapshotErrors = totalErrors;
+  }
+
+  getTimeSeries(): TimeSeriesPoint[] {
+    return [...this.timeSeries];
+  }
+
   getMetrics(): GatewayMetrics {
     const sorted = [...this.latencies].sort((a, b) => a - b);
     const avg =
@@ -117,6 +168,7 @@ export class MetricsCollector {
       backendFailures: { ...this.backendFailures },
       backendHealth: {},
       recentRequests: this.getRecentRequests(),
+      timeSeries: this.getTimeSeries(),
     };
   }
 

@@ -1,29 +1,44 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
-interface KpiCardProps {
-  title: string;
+interface Props {
+  label: string;
   value: string | number;
-  unit?: string;
-  icon: ReactNode;
-  trend?: string;
+  sub?: string;
+  icon?: ReactNode;
+  accent?: 'default' | 'green' | 'yellow' | 'red' | 'blue';
+  mono?: boolean;
 }
 
-export function KpiCard({ title, value, unit, icon, trend }: KpiCardProps) {
+const accents = {
+  default: { border: 'border-[#22222e]',   iconBg: 'bg-[#6366f120]', iconText: 'text-indigo-400' },
+  green:   { border: 'border-green-900/40', iconBg: 'bg-green-500/10', iconText: 'text-green-400'  },
+  yellow:  { border: 'border-yellow-900/40',iconBg: 'bg-yellow-500/10',iconText: 'text-yellow-400' },
+  red:     { border: 'border-red-900/40',   iconBg: 'bg-red-500/10',   iconText: 'text-red-400'    },
+  blue:    { border: 'border-blue-900/40',  iconBg: 'bg-blue-500/10',  iconText: 'text-blue-400'   },
+};
+
+export function KpiCard({ label, value, sub, icon, accent = 'default', mono }: Props) {
+  const a = accents[accent];
   return (
-    <div className="bg-surface-800 rounded-lg p-5 border border-subtle flex flex-col">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-slate-400 text-sm font-medium">{title}</span>
-        <div className="text-slate-500">{icon}</div>
+    <div
+      className={`bg-[#16161e] border ${a.border} rounded-lg p-4 flex flex-col gap-3 animate-fade-in`}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-[#8888a0] tracking-widest uppercase">{label}</span>
+        {icon && (
+          <span className={`w-7 h-7 rounded flex items-center justify-center ${a.iconBg} ${a.iconText}`}>
+            {icon}
+          </span>
+        )}
       </div>
-      <div className="flex items-baseline gap-2 mt-auto">
-        <span className="text-2xl font-semibold text-slate-100">{value}</span>
-        {unit && <span className="text-slate-400 text-sm font-medium">{unit}</span>}
+      <div className="flex items-end gap-2">
+        <span
+          className={`text-2xl font-semibold text-[#f0f0f4] leading-none ${mono ? 'font-mono' : ''}`}
+        >
+          {value}
+        </span>
       </div>
-      {trend && (
-        <div className="mt-2 text-xs font-medium text-slate-400">
-          {trend}
-        </div>
-      )}
+      {sub && <p className="text-xs text-[#55556a] leading-tight">{sub}</p>}
     </div>
   );
 }

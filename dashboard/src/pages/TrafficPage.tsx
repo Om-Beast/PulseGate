@@ -1,71 +1,74 @@
 import { useDashboardContext } from '../contexts/DashboardContext';
+import { TrafficChart } from '../components/TrafficChart';
+import { LatencyChart } from '../components/LatencyChart';
+import { KpiCard } from '../components/KpiCard';
 
 export function TrafficPage() {
   const { metrics } = useDashboardContext();
 
-  if (!metrics) return null;
-
-  const routes = Object.entries(metrics.requestCountByRoute).sort((a, b) => b[1] - a[1]);
-  const backends = Object.entries(metrics.requestCountByBackend).sort((a, b) => b[1] - a[1]);
+  const ts = metrics?.timeSeries ?? [];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-100 mb-1">Traffic</h1>
-        <p className="text-slate-400 text-sm">Detailed traffic analytics</p>
+    <div className="space-y-5 animate-fade-in">
+      <div className="grid grid-cols-3 gap-3">
+        <KpiCard label="P50 Latency" value={metrics?.p50 ? `${metrics.p50}ms` : '—'} accent="green" mono />
+        <KpiCard label="P95 Latency" value={metrics?.p95 ? `${metrics.p95}ms` : '—'} accent={metrics?.p95 && metrics.p95 > 200 ? 'yellow' : 'green'} mono />
+        <KpiCard label="P99 Latency" value={metrics?.p99 ? `${metrics.p99}ms` : '—'} accent={metrics?.p99 && metrics.p99 > 500 ? 'red' : 'default'} mono />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-surface-800 rounded-lg border border-subtle overflow-hidden">
-          <div className="p-4 border-b border-subtle bg-surface-700/30">
-            <h3 className="font-medium text-slate-200">Requests by Route</h3>
+      <div className="bg-[#16161e] border border-[#22222e] rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-medium text-[#8888a0] tracking-widest uppercase">Request Volume</p>
+          <span className="text-[10px] text-[#55556a] font-mono">5-minute rolling window</span>
+        </div>
+        <TrafficChart timeSeries={ts} height={220} />
+      </div>
+
+      <div className="bg-[#16161e] border border-[#22222e] rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-medium text-[#8888a0] tracking-widest uppercase">Latency Percentiles</p>
+          <div className="flex items-center gap-3 text-[10px] font-mono">
+            <span className="flex items-center gap-1"><span className="w-2 h-px bg-green-500 inline-block"/>P50</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-indigo-500 inline-block"/>P95</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-px bg-red-500 inline-block"/>P99</span>
           </div>
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-surface-700/50 text-slate-300">
-              <tr>
-                <th className="px-4 py-3 font-medium">Route Path</th>
-                <th className="px-4 py-3 font-medium text-right">Requests</th>
+        </div>
+        <LatencyChart timeSeries={ts} height={220} />
+      </div>
+
+      {/* Per-route table */}
+      {metrics?.requestCountByRoute && Object.keys(metrics.requestCountByRoute).length > 0 && (
+        <div className="bg-[#16161e] border border-[#22222e] rounded-lg">
+          <div className="px-4 py-3 border-b border-[#22222e]">
+            <p className="text-xs font-medium text-[#8888a0] tracking-widest uppercase">Requests by Route</p>
+          </div>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-[#1a1a24]">
+                <th className="px-4 py-2 text-left text-[10px] font-medium text-[#55556a] tracking-widest">ROUTE</th>
+                <th className="px-4 py-2 text-right text-[10px] font-medium text-[#55556a] tracking-widest">REQUESTS</th>
+                <th className="px-4 py-2 text-right text-[10px] font-medium text-[#55556a] tracking-widest">SHARE</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-700/50">
-              {routes.map(([route, count]) => (
-                <tr key={route} className="hover:bg-surface-700/30">
-                  <td className="px-4 py-3 font-mono text-slate-300">{route}</td>
-                  <td className="px-4 py-3 text-right text-slate-400">{count.toLocaleString()}</td>
-                </tr>
-              ))}
-              {routes.length === 0 && (
-                <tr><td colSpan={2} className="px-4 py-4 text-center text-slate-500">No route traffic data</td></tr>
-              )}
+            <tbody>
+              {Object.entries(metrics.requestCountByRoute)
+                .sort(([, a], [, b]) => b - a)
+                .map(([route, count]) => {
+                  const share = metrics.totalRequests > 0
+                    ? ((count / metrics.totalRequests) * 100).toFixed(1)
+                    : '0.0';
+                  return (
+                    <tr key={route} className="border-b border-[#1a1a24] hover:bg-[#1a1a24] transition-colors">
+                      <td className="px-4 py-2.5 font-mono text-[#8888a0]">{route}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-[#f0f0f4]">{count.toLocaleString()}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-[#55556a]">{share}%</td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
-
-        <div className="bg-surface-800 rounded-lg border border-subtle overflow-hidden">
-          <div className="p-4 border-b border-subtle bg-surface-700/30">
-            <h3 className="font-medium text-slate-200">Requests by Backend Instance</h3>
-          </div>
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-surface-700/50 text-slate-300">
-              <tr>
-                <th className="px-4 py-3 font-medium">Instance ID</th>
-                <th className="px-4 py-3 font-medium text-right">Requests</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-700/50">
-              {backends.map(([id, count]) => (
-                <tr key={id} className="hover:bg-surface-700/30">
-                  <td className="px-4 py-3 font-mono text-slate-300">{id.substring(0, 16)}...</td>
-                  <td className="px-4 py-3 text-right text-slate-400">{count.toLocaleString()}</td>
-                </tr>
-              ))}
-              {backends.length === 0 && (
-                <tr><td colSpan={2} className="px-4 py-4 text-center text-slate-500">No backend traffic data</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

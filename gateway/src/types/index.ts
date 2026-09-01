@@ -1,6 +1,6 @@
-import { Request } from 'express';
+﻿import { Request } from 'express';
 
-// ─── JWT & Auth ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ JWT & Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface JwtPayload {
   userId: string;
@@ -12,7 +12,7 @@ export interface AuthUser {
   role: 'USER' | 'ADMIN' | 'PREMIUM';
 }
 
-// ─── Backend Registry ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Backend Registry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface ServiceInstance {
   id: string;
@@ -25,14 +25,14 @@ export interface ServiceInstance {
   recoveryCount: number;
 }
 
-// ─── Routing ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Routing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface RouteConfig {
   service: string;
   strip: string;
 }
 
-// ─── Error Codes ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Error Codes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export type GatewayErrorCode =
   | 'ROUTE_NOT_FOUND'
@@ -45,7 +45,7 @@ export type GatewayErrorCode =
   | 'BAD_REQUEST'
   | 'INTERNAL_ERROR';
 
-// ─── Metrics ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Metrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface RecentRequest {
   timestamp: string;
@@ -73,9 +73,19 @@ export interface GatewayMetrics {
   backendFailures: Record<string, number>;
   backendHealth: Record<string, boolean>;
   recentRequests: RecentRequest[];
+  timeSeries?: TimeSeriesPoint[];
 }
 
-// ─── Express Request Augmentation ─────────────────────────────────────────────
+export interface TimeSeriesPoint {
+  timestamp: number;
+  requests: number;
+  p50: number;
+  p95: number;
+  p99: number;
+  errors: number;
+}
+
+// â”€â”€â”€ Express Request Augmentation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 declare global {
   namespace Express {
@@ -87,3 +97,4 @@ declare global {
 }
 
 export {};
+

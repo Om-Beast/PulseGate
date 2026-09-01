@@ -1,33 +1,52 @@
-import { clsx } from 'clsx';
+﻿import type { OverallStatus } from '../types';
 
-interface StatusBadgeProps {
-  status: 'healthy' | 'unhealthy' | 'degraded' | 'unknown';
+interface Props {
+  status: OverallStatus;
+  size?: 'sm' | 'md' | 'lg';
+  pulse?: boolean;
 }
 
-export function StatusBadge({ status }: StatusBadgeProps) {
-  const styles = {
-    healthy: 'bg-success/10 text-success border-success/20',
-    unhealthy: 'bg-danger/10 text-danger border-danger/20',
-    degraded: 'bg-warning/10 text-warning border-warning/20',
-    unknown: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
-  };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const config: Record<OverallStatus | string, { dot: string; text: string; label: string }> = {
+  healthy:  { dot: 'bg-green-500',  text: 'text-green-400',  label: 'HEALTHY'  },
+  degraded: { dot: 'bg-yellow-500', text: 'text-yellow-400', label: 'DEGRADED' },
+  critical: { dot: 'bg-red-500',    text: 'text-red-400',    label: 'CRITICAL' },
+  unknown:  { dot: 'bg-gray-500',   text: 'text-gray-400',   label: 'UNKNOWN'  },
+};
 
-  const dots = {
-    healthy: 'bg-success',
-    unhealthy: 'bg-danger',
-    degraded: 'bg-warning',
-    unknown: 'bg-slate-400',
-  };
+const sizes = {
+  sm: { dot: 'w-1.5 h-1.5', text: 'text-xs' },
+  md: { dot: 'w-2 h-2',     text: 'text-xs' },
+  lg: { dot: 'w-2.5 h-2.5', text: 'text-sm' },
+};
 
+export function StatusBadge({ status, size = 'md', pulse = false }: Props) {
+  const c = config[status];
+  const s = sizes[size];
   return (
-    <span
-      className={clsx(
-        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium border',
-        styles[status]
-      )}
-    >
-      <span className={clsx('w-1.5 h-1.5 rounded-full', dots[status])} />
-      {status.toUpperCase()}
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        className={`rounded-full flex-shrink-0 ${c.dot} ${s.dot} ${pulse ? 'animate-pulse-dot' : ''}`}
+      />
+      <span className={`font-mono font-medium tracking-widest ${c.text} ${s.text}`}>
+        {c.label}
+      </span>
     </span>
   );
 }
+
+interface HealthDotProps {
+  healthy: boolean;
+  pulse?: boolean;
+  size?: 'sm' | 'md';
+}
+export function HealthDot({ healthy, pulse, size = 'sm' }: HealthDotProps) {
+  const sz = size === 'sm' ? 'w-1.5 h-1.5' : 'w-2 h-2';
+  return (
+    <span
+      className={`rounded-full inline-block flex-shrink-0 ${sz} ${healthy ? 'bg-green-500' : 'bg-red-500'} ${pulse ? 'animate-pulse-dot' : ''}`}
+      aria-label={healthy ? 'healthy' : 'unhealthy'}
+    />
+  );
+}
+

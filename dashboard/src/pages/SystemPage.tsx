@@ -1,59 +1,109 @@
 import { useDashboardContext } from '../contexts/DashboardContext';
+import { SkeletonCard } from '../components/LoadingSpinner';
+import { StatusBadge } from '../components/StatusBadge';
+
+function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex items-center justify-between py-2.5 border-b border-[#1a1a24] last:border-0">
+      <span className="text-xs text-[#55556a]">{label}</span>
+      <span className={`text-xs ${mono ? 'font-mono' : ''} text-[#f0f0f4]`}>{value}</span>
+    </div>
+  );
+}
+
+function fmtUptime(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  return `${h}h ${m}m ${s}s`;
+}
+
+function fmtBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export function SystemPage() {
-  const { routes } = useDashboardContext();
+  const { systemHealth, loading } = useDashboardContext();
+
+  if (loading && !systemHealth) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-100 mb-1">System Configuration</h1>
-        <p className="text-slate-400 text-sm">Gateway internals and routing</p>
-      </div>
-
-      <div className="bg-surface-800 rounded-lg border border-subtle overflow-hidden">
-        <div className="p-4 border-b border-subtle bg-surface-700/30">
-          <h3 className="font-medium text-slate-200">Routing Table</h3>
+    <div className="space-y-4 animate-fade-in">
+      {/* Gateway status */}
+      <div className="bg-[#16161e] border border-[#22222e] rounded-lg">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#22222e]">
+          <p className="text-xs font-medium text-[#8888a0] tracking-widest uppercase">Gateway</p>
+          {systemHealth && <StatusBadge status={systemHealth.status} pulse />}
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-surface-700/50 text-slate-300">
-              <tr>
-                <th className="px-4 py-3 font-medium">Prefix (Route)</th>
-                <th className="px-4 py-3 font-medium">Target Service</th>
-                <th className="px-4 py-3 font-medium">Strip Prefix</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-700/50">
-              {Object.entries(routes).map(([prefix, config]) => (
-                <tr key={prefix} className="hover:bg-surface-700/30">
-                  <td className="px-4 py-3 font-mono text-slate-200">{prefix}</td>
-                  <td className="px-4 py-3 font-medium text-accent-400">{config.service}</td>
-                  <td className="px-4 py-3 font-mono text-slate-400">{config.strip}</td>
-                </tr>
-              ))}
-              {Object.keys(routes).length === 0 && (
-                <tr><td colSpan={3} className="px-4 py-4 text-center text-slate-500">No routes configured</td></tr>
-              )}
-            </tbody>
-          </table>
+        <div className="px-4 py-1">
+          <Row label="Version" value={systemHealth?.gatewayVersion ?? '1.0.0'} mono />
+          <Row label="Environment" value={systemHealth?.nodeEnv ?? 'development'} mono />
+          <Row label="Node.js" value={systemHealth?.nodeVersion ?? '—'} mono />
+          <Row label="Uptime" value={systemHealth ? fmtUptime(systemHealth.uptime) : '—'} mono />
+          <Row label="Memory (heap)" value={systemHealth ? fmtBytes(systemHealth.memoryUsage) : '—'} mono />
+          <Row
+            label="Instances"
+            value={systemHealth ? `${systemHealth.healthyInstances} / ${systemHealth.totalInstances} healthy` : '—'}
+            mono
+          />
         </div>
       </div>
 
-      <div className="bg-surface-800 rounded-lg border border-subtle p-5">
-        <h3 className="font-medium text-slate-200 mb-4">Gateway Information</h3>
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between border-b border-subtle pb-2">
-            <span className="text-slate-400">Version</span>
-            <span className="text-slate-200 font-mono">1.0.0</span>
-          </div>
-          <div className="flex justify-between border-b border-subtle pb-2">
-            <span className="text-slate-400">Environment</span>
-            <span className="text-slate-200 font-mono">production</span>
-          </div>
-          <div className="flex justify-between border-b border-subtle pb-2">
-            <span className="text-slate-400">Node Version</span>
-            <span className="text-slate-200 font-mono">v20.x</span>
-          </div>
+      {/* Connections */}
+      <div className="bg-[#16161e] border border-[#22222e] rounded-lg">
+        <div className="px-4 py-3 border-b border-[#22222e]">
+          <p className="text-xs font-medium text-[#8888a0] tracking-widest uppercase">Connections</p>
+        </div>
+        <div className="px-4 py-1">
+          <Row label="Redis host" value={systemHealth?.redisHost ?? 'localhost'} mono />
+          <Row label="PostgreSQL host" value={systemHealth?.postgresHost ?? 'localhost'} mono />
+        </div>
+      </div>
+
+      {/* Configuration */}
+      <div className="bg-[#16161e] border border-[#22222e] rounded-lg">
+        <div className="px-4 py-3 border-b border-[#22222e]">
+          <p className="text-xs font-medium text-[#8888a0] tracking-widest uppercase">Configuration</p>
+        </div>
+        <div className="px-4 py-1">
+          <Row label="Backend timeout" value={systemHealth ? `${systemHealth.gatewayTimeout}ms` : '10000ms'} mono />
+          <Row label="Health check interval" value={systemHealth ? `${systemHealth.healthCheckInterval}ms` : '5000ms'} mono />
+          <Row label="Failure threshold" value="3 consecutive failures" mono />
+          <Row label="Recovery threshold" value="2 consecutive successes" mono />
+          <Row label="Rate limit window" value="60 seconds" mono />
+          <Row label="Max recent requests" value="500" mono />
+          <Row label="Retry policy" value="GET / HEAD / OPTIONS only" mono />
+          <Row label="Proxy engine" value="Node.js http.request (built-in)" mono />
+        </div>
+      </div>
+
+      {/* Technology stack */}
+      <div className="bg-[#16161e] border border-[#22222e] rounded-lg p-4">
+        <p className="text-xs font-medium text-[#8888a0] tracking-widest uppercase mb-4">Technology Stack</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: 'Runtime', value: 'Node.js 20+' },
+            { label: 'Framework', value: 'Express 4' },
+            { label: 'Language', value: 'TypeScript 5' },
+            { label: 'Auth', value: 'JWT + bcrypt' },
+            { label: 'Rate Limiting', value: 'Redis token bucket' },
+            { label: 'Database', value: 'PostgreSQL 16' },
+            { label: 'Cache', value: 'Redis 7' },
+            { label: 'Dashboard', value: 'React 18 + Vite' },
+          ].map(item => (
+            <div key={item.label} className="bg-[#111118] border border-[#22222e] rounded-lg px-3 py-2.5">
+              <p className="text-[10px] text-[#55556a] font-mono uppercase tracking-wide mb-1">{item.label}</p>
+              <p className="text-xs font-medium text-[#f0f0f4]">{item.value}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

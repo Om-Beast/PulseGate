@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+﻿import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import * as http from 'http';
@@ -24,11 +24,11 @@ import {
 import { ServiceInstance } from './types';
 import { config } from './config/settings';
 
-// ─── Create Express App ────────────────────────────────────────────────────────
+// â”€â”€â”€ Create Express App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const app = express();
 
-// ─── Security & Body Parsing ───────────────────────────────────────────────────
+// â”€â”€â”€ Security & Body Parsing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.use(helmet());
 app.use(
@@ -39,12 +39,12 @@ app.use(
 );
 app.use(express.json({ limit: '1mb' }));
 
-// ─── Core Middleware ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Core Middleware â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.use(correlationId);
 app.use(requestLogger);
 
-// ─── Public Routes ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Public Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', service: 'pulsegate-gateway' });
@@ -53,7 +53,7 @@ app.get('/health', (_req: Request, res: Response) => {
 app.post('/auth/register', register);
 app.post('/auth/login', login);
 
-// ─── Admin Routes (ADMIN role only) ───────────────────────────────────────────
+// â”€â”€â”€ Admin Routes (ADMIN role only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.get('/admin/services', requireAuth, requireAdmin, (_req: Request, res: Response) => {
   res.json({
@@ -90,7 +90,7 @@ app.get('/admin/requests', requireAuth, requireAdmin, (_req: Request, res: Respo
   });
 });
 
-// ─── Protected API Routes ──────────────────────────────────────────────────────
+// â”€â”€â”€ Protected API Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.use(
   '/api',
@@ -155,17 +155,17 @@ app.use(
   },
 );
 
-// ─── 404 Handler ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ 404 Handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
   next(routeNotFound(req.path).withRequestId(req.requestId));
 });
 
-// ─── Error Handler ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Error Handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.use(errorHandler);
 
-// ─── Proxy Implementation ─────────────────────────────────────────────────────
+// â”€â”€â”€ Proxy Implementation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Forward the incoming request to a backend instance using Node's built-in http module.
@@ -320,3 +320,4 @@ async function proxyRequest(
 }
 
 export default app;
+
